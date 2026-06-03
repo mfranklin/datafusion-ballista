@@ -21,6 +21,7 @@
 //! (`ShuffleWriterExec`) and sort-based shuffle (`SortShuffleWriterExec`).
 
 use datafusion::physical_plan::{ExecutionPlan, Partitioning};
+use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -29,6 +30,9 @@ use std::sync::Arc;
 /// This trait defines the common interface needed by the distributed planner
 /// and execution graph to work with different shuffle implementations.
 pub trait ShuffleWriter: ExecutionPlan + Debug + Send + Sync {
+    /// Return a reference for downcasting concrete shuffle writer types.
+    fn as_any(&self) -> &dyn Any;
+
     /// Get the Job ID for this query stage.
     fn job_id(&self) -> &str;
 

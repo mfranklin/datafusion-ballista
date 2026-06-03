@@ -253,6 +253,8 @@ async fn run_received_task<T: 'static + AsLogicalPlan, U: 'static + AsExecutionP
     let session_config = session_config.update_from_key_value_pair(&task.props);
 
     let task_scalar_functions = executor.function_registry.scalar_functions.clone();
+    let task_higher_order_functions =
+        executor.function_registry.higher_order_functions.clone();
     let task_aggregate_functions = executor.function_registry.aggregate_functions.clone();
     let task_window_functions = executor.function_registry.window_functions.clone();
 
@@ -264,6 +266,7 @@ async fn run_received_task<T: 'static + AsLogicalPlan, U: 'static + AsExecutionP
         session_id,
         session_config,
         task_scalar_functions,
+        task_higher_order_functions,
         task_aggregate_functions,
         task_window_functions,
         runtime.clone(),

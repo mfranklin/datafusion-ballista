@@ -37,7 +37,6 @@ use datafusion::physical_plan::test::exec::StatisticsExec;
 use datafusion::physical_plan::{
     DisplayAs, DisplayFormatType, ExecutionPlan, PhysicalExpr, PlanProperties,
 };
-use std::any::Any;
 use std::collections::HashSet;
 use std::fmt::Formatter;
 use std::sync::Arc;
@@ -663,11 +662,6 @@ impl ExecutionPlan for MockPartitionedScan {
     fn name(&self) -> &str {
         "MockPartitionedScan"
     }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
     fn properties(&self) -> &Arc<PlanProperties> {
         &self.plan_properties
     }
@@ -694,7 +688,7 @@ impl ExecutionPlan for MockPartitionedScan {
     fn partition_statistics(
         &self,
         _partition: Option<usize>,
-    ) -> datafusion::common::Result<Statistics> {
-        Ok(self.statistics.clone())
+    ) -> datafusion::common::Result<Arc<Statistics>> {
+        Ok(Arc::new(self.statistics.clone()))
     }
 }

@@ -19,7 +19,7 @@ use chrono::{TimeZone, Utc};
 use datafusion::common::tree_node::{Transformed, TransformedResult, TreeNode};
 
 use datafusion::execution::TaskContext;
-use datafusion::logical_expr::{AggregateUDF, ScalarUDF, WindowUDF};
+use datafusion::logical_expr::{AggregateUDF, HigherOrderUDF, ScalarUDF, WindowUDF};
 use datafusion::physical_plan::metrics::{
     Count, Gauge, MetricValue, MetricsSet, PruningMetrics, RatioMetrics, Time, Timestamp,
 };
@@ -354,6 +354,7 @@ pub fn get_task_definition<T: 'static + AsLogicalPlan, U: 'static + AsExecutionP
         scalar_functions: scalar_functions.clone(),
         aggregate_functions: aggregate_functions.clone(),
         window_functions: window_functions.clone(),
+        higher_order_functions: HashMap::<String, Arc<HigherOrderUDF>>::new(),
     });
 
     let ctx = TaskContext::new(
@@ -361,6 +362,7 @@ pub fn get_task_definition<T: 'static + AsLogicalPlan, U: 'static + AsExecutionP
         task.session_id.clone(),
         session_config.clone(),
         scalar_functions,
+        HashMap::new(),
         aggregate_functions,
         window_functions,
         runtime.clone(),
@@ -418,6 +420,7 @@ pub fn get_task_definition_vec<
         scalar_functions: scalar_functions.clone(),
         aggregate_functions: aggregate_functions.clone(),
         window_functions: window_functions.clone(),
+        higher_order_functions: HashMap::<String, Arc<HigherOrderUDF>>::new(),
     });
 
     let ctx = TaskContext::new(
@@ -425,6 +428,7 @@ pub fn get_task_definition_vec<
         uuid::Uuid::new_v4().to_string(),
         session_config.clone(),
         scalar_functions,
+        HashMap::new(),
         aggregate_functions,
         window_functions,
         runtime.clone(),

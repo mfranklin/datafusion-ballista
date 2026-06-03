@@ -284,7 +284,6 @@ mod test {
     };
     use datafusion::prelude::SessionContext;
     use futures::Stream;
-    use std::any::Any;
     use std::pin::Pin;
     use std::sync::Arc;
     use std::task::{Context, Poll};
@@ -352,11 +351,6 @@ mod test {
         fn name(&self) -> &str {
             "NeverendingOperator"
         }
-
-        fn as_any(&self) -> &dyn Any {
-            self
-        }
-
         fn schema(&self) -> SchemaRef {
             Arc::new(Schema::empty())
         }
