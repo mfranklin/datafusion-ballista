@@ -42,7 +42,6 @@ use datafusion::physical_plan::{
 use futures::StreamExt;
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
-use std::any::Any;
 use std::sync::Arc;
 
 /// Physical execution plan node that randomly injects failures for chaos/robustness testing.
@@ -123,11 +122,6 @@ impl ExecutionPlan for ChaosExec {
     fn name(&self) -> &str {
         "ChaosExec"
     }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
     fn properties(&self) -> &Arc<PlanProperties> {
         self.input.properties()
     }
@@ -218,7 +212,7 @@ impl ExecutionPlan for ChaosExec {
         self.input.metrics()
     }
 
-    fn partition_statistics(&self, partition: Option<usize>) -> Result<Statistics> {
+    fn partition_statistics(&self, partition: Option<usize>) -> Result<Arc<Statistics>> {
         self.input.partition_statistics(partition)
     }
 

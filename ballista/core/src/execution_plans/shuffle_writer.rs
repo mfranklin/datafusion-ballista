@@ -24,7 +24,6 @@ use datafusion::arrow::ipc::CompressionType;
 use datafusion::arrow::ipc::writer::IpcWriteOptions;
 
 use datafusion::arrow::ipc::writer::StreamWriter;
-use std::any::Any;
 use std::fmt::Debug;
 use std::fs;
 use std::fs::File;
@@ -285,7 +284,7 @@ impl ShuffleWriterExec {
                             exprs,
                             num_output_partitions,
                             repart_time,
-                        );
+                        )?;
 
                         while let Some(input_batch) = rx.blocking_recv() {
                             partitioner.partition(
@@ -436,11 +435,6 @@ impl ExecutionPlan for ShuffleWriterExec {
     fn name(&self) -> &str {
         "ShuffleWriterExec"
     }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
     fn schema(&self) -> SchemaRef {
         self.plan.schema()
     }
@@ -560,12 +554,16 @@ impl ExecutionPlan for ShuffleWriterExec {
         Some(self.metrics.clone_inner())
     }
 
-    fn partition_statistics(&self, partition: Option<usize>) -> Result<Statistics> {
+    fn partition_statistics(&self, partition: Option<usize>) -> Result<Arc<Statistics>> {
         self.plan.partition_statistics(partition)
     }
 }
 
 impl ShuffleWriter for ShuffleWriterExec {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     fn job_id(&self) -> &str {
         &self.job_id
     }
@@ -634,7 +632,7 @@ mod tests {
         assert_eq!(1, batches.len());
         let batch = &batches[0];
         assert_eq!(3, batch.num_columns());
-        assert_eq!(2, batch.num_rows());
+        assert_eq!(1, batch.num_rows());
         let path = batch.columns()[1]
             .as_any()
             .downcast_ref::<StringArray>()
@@ -644,12 +642,8 @@ mod tests {
         assert!(
             file0.ends_with("/jobOne/1/0/data-0.arrow")
                 || file0.ends_with("\\jobOne\\1\\0\\data-0.arrow")
-        );
-        let file1 = path.value(1);
-
-        assert!(
-            file1.ends_with("/jobOne/1/1/data-0.arrow")
-                || file1.ends_with("\\jobOne\\1\\1\\data-0.arrow")
+                || file0.ends_with("/jobOne/1/1/data-0.arrow")
+                || file0.ends_with("\\jobOne\\1\\1\\data-0.arrow")
         );
 
         let stats = batch.columns()[2]
@@ -663,8 +657,7 @@ mod tests {
             .as_any()
             .downcast_ref::<UInt64Array>()
             .unwrap();
-        assert_eq!(4, num_rows.value(0));
-        assert_eq!(4, num_rows.value(1));
+        assert_eq!(8, num_rows.value(0));
 
         Ok(())
     }
@@ -692,7 +685,7 @@ mod tests {
         assert_eq!(1, batches.len());
         let batch = &batches[0];
         assert_eq!(3, batch.num_columns());
-        assert_eq!(2, batch.num_rows());
+        assert_eq!(1, batch.num_rows());
         let stats = batch.columns()[2]
             .as_any()
             .downcast_ref::<StructArray>()
@@ -703,8 +696,7 @@ mod tests {
             .as_any()
             .downcast_ref::<UInt64Array>()
             .unwrap();
-        assert_eq!(2, num_rows.value(0));
-        assert_eq!(2, num_rows.value(1));
+        assert_eq!(4, num_rows.value(0));
 
         Ok(())
     }

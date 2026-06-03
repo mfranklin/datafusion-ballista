@@ -21,7 +21,8 @@ use datafusion::functions::all_default_functions;
 use datafusion::functions_aggregate::all_default_aggregate_functions;
 use datafusion::functions_window::all_default_window_functions;
 use datafusion::logical_expr::planner::ExprPlanner;
-use datafusion::logical_expr::{AggregateUDF, ScalarUDF, WindowUDF};
+use datafusion::logical_expr::{AggregateUDF, HigherOrderUDF, ScalarUDF, WindowUDF};
+use datafusion_functions_nested::all_default_higher_order_functions;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -41,6 +42,8 @@ pub struct BallistaFunctionRegistry {
     pub aggregate_functions: HashMap<String, Arc<AggregateUDF>>,
     /// Window user-defined functions.
     pub window_functions: HashMap<String, Arc<WindowUDF>>,
+    /// Higher-order user-defined functions.
+    pub higher_order_functions: HashMap<String, Arc<HigherOrderUDF>>,
 }
 
 impl Default for BallistaFunctionRegistry {
@@ -58,6 +61,12 @@ impl Default for BallistaFunctionRegistry {
 
         let window_functions: HashMap<String, Arc<WindowUDF>> =
             all_default_window_functions()
+                .into_iter()
+                .map(|f| (f.name().to_string(), f))
+                .collect();
+
+        let higher_order_functions: HashMap<String, Arc<HigherOrderUDF>> =
+            all_default_higher_order_functions()
                 .into_iter()
                 .map(|f| (f.name().to_string(), f))
                 .collect();
@@ -85,6 +94,7 @@ impl Default for BallistaFunctionRegistry {
             scalar_functions,
             aggregate_functions,
             window_functions,
+            higher_order_functions,
         }
     }
 }
@@ -104,6 +114,10 @@ impl FunctionRegistry for BallistaFunctionRegistry {
 
     fn udwfs(&self) -> HashSet<String> {
         self.window_functions.keys().cloned().collect()
+    }
+
+    fn higher_order_function_names(&self) -> HashSet<String> {
+        self.higher_order_functions.keys().cloned().collect()
     }
 
     fn udf(&self, name: &str) -> datafusion::common::Result<Arc<ScalarUDF>> {
@@ -135,6 +149,19 @@ impl FunctionRegistry for BallistaFunctionRegistry {
             ))
         })
     }
+
+    fn higher_order_function(
+        &self,
+        name: &str,
+    ) -> datafusion::common::Result<Arc<HigherOrderUDF>> {
+        let result = self.higher_order_functions.get(name);
+
+        result.cloned().ok_or_else(|| {
+            DataFusionError::Internal(format!(
+                "There is no higher-order UDF named \"{name}\" in the TaskContext"
+            ))
+        })
+    }
 }
 
 impl From<&SessionState> for BallistaFunctionRegistry {
@@ -142,11 +169,13 @@ impl From<&SessionState> for BallistaFunctionRegistry {
         let scalar_functions = state.scalar_functions().clone();
         let aggregate_functions = state.aggregate_functions().clone();
         let window_functions = state.window_functions().clone();
+        let higher_order_functions = state.higher_order_functions().clone();
 
         Self {
             scalar_functions,
             aggregate_functions,
             window_functions,
+            higher_order_functions,
         }
     }
 }

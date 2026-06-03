@@ -118,7 +118,8 @@ mod standalone {
         prelude::{SessionConfig, SessionContext},
     };
     use datafusion_proto::{
-        logical_plan::LogicalExtensionCodec, physical_plan::PhysicalExtensionCodec,
+        logical_plan::LogicalExtensionCodec,
+        physical_plan::{PhysicalExtensionCodec, PhysicalProtoConverterExtension},
     };
 
     #[tokio::test]
@@ -366,21 +367,23 @@ mod standalone {
             buf: &[u8],
             inputs: &[Arc<dyn datafusion::physical_plan::ExecutionPlan>],
             ctx: &TaskContext,
+            proto_converter: &dyn PhysicalProtoConverterExtension,
         ) -> datafusion::error::Result<Arc<dyn datafusion::physical_plan::ExecutionPlan>>
         {
             self.invoked
                 .store(true, std::sync::atomic::Ordering::Relaxed);
-            self.codec.try_decode(buf, inputs, ctx)
+            self.codec.try_decode(buf, inputs, ctx, proto_converter)
         }
 
         fn try_encode(
             &self,
             node: Arc<dyn datafusion::physical_plan::ExecutionPlan>,
             buf: &mut Vec<u8>,
+            proto_converter: &dyn PhysicalProtoConverterExtension,
         ) -> datafusion::error::Result<()> {
             self.invoked
                 .store(true, std::sync::atomic::Ordering::Relaxed);
-            self.codec.try_encode(node, buf)
+            self.codec.try_encode(node, buf, proto_converter)
         }
     }
 
